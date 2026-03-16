@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: media
+    // Fields:
+    //   - type: string (required, enum: ["image", "video"])
+    //   - url: string (required, URL)
+    //   - authorId: string (required, uid)
+    //   - authorName: string (required)
+    //   - createdAt: timestamp (required)
+    //   - description: string (optional)
+    //
+    // Collection: media/{mediaId}/comments
+    // Fields:
+    //   - mediaId: string (required)
+    //   - authorId: string (required, uid)
+    //   - authorName: string (required)
+    //   - text: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: users
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - photoURL: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorId;
+    }
+
+    function isValidMedia(data) {
+      return data.keys().hasAll(['type', 'url', 'authorId', 'authorName', 'createdAt']) &&
+             data.type in ['image', 'video'] &&
+             data.url is string && data.url.size() < 2000 &&
+             data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() < 100 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['mediaId', 'authorId', 'authorName', 'text', 'createdAt']) &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.authorId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches('^.+@.+$');
+    }
+
+    // Media Rules
+    match /media/{mediaId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidMedia(request.resource.data);
+      allow update: if isDocOwner() && isValidMedia(request.resource.data);
+      allow delete: if isDocOwner();
+
+      // Comments Rules
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow delete: if isOwner(resource.data.authorId);
+      }
+    }
+
+    // User Rules
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+  }
+}

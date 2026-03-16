@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Media": {
+      "title": "Media",
+      "description": "A photo or video uploaded by a user",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "url": { "type": "string", "format": "uri" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" }
+      },
+      "required": ["type", "url", "authorId", "authorName", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a media item",
+      "type": "object",
+      "properties": {
+        "mediaId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["mediaId", "authorId", "authorName", "text", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string", "format": "uri" }
+      },
+      "required": ["name", "email"]
+    }
+  },
+  "firestore": {
+    "/media/{mediaId}": {
+      "schema": "Media",
+      "description": "Collection of uploaded photos and videos"
+    },
+    "/media/{mediaId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Sub-collection of comments for a specific media item"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    }
+  }
+}

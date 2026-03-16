@@ -1,0 +1,5 @@
+{
+  "name": "MediaShare",
+  "description": "A platform to upload, share, and comment on photos and videos.",
+  "requestFramePermissions": []
+}
